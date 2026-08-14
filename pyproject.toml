@@ -1,0 +1,35 @@
+[build-system]
+requires = ["setuptools>=77"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "yaml-sort"
+version = "0.1.0"
+description = "Deterministic YAML key sorter — sorts mapping keys alphabetically while preserving comments and byte-for-byte formatting."
+readme = "README.md"
+requires-python = ">=3.9"
+license = "Apache-2.0"
+authors = [{ name = "Soren L. Hansen" }]
+keywords = ["yaml", "sort", "deterministic", "chezmoi", "diff"]
+classifiers = [
+    "Programming Language :: Python :: 3",
+    "Operating System :: OS Independent",
+    "Topic :: Text Processing :: Markup :: YAML",
+]
+dependencies = []
+
+[project.scripts]
+yaml-sort = "yaml_sort.cli:main"
+
+[project.urls]
+Homepage = "https://github.com/sorenisanerd/yaml-sort"
+
+[tool.setuptools]
+package-dir = { "" = "src" }
+
+[tool.setuptools.packages.find]
+where = ["src"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+addopts = "-q"

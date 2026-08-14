@@ -1,0 +1,8 @@
+custom_providers:
+  - api_key: none
+    base_url: http://x:11434/v1
+    model: gemma4:e4b
+    models:
+      - gemma4:12b
+      - gemma4:latest
+    name: ollama
