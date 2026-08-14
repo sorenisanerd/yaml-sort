@@ -24,6 +24,12 @@ yaml-sort = "yaml_sort.cli:main"
 [project.urls]
 Homepage = "https://github.com/sorenisanerd/yaml-sort"
 
+[dependency-groups]
+dev = [
+    "pytest>=8",
+    "PyYAML>=6",
+]
+
 [tool.setuptools]
 package-dir = { "" = "src" }
 
