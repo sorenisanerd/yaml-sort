@@ -18,6 +18,9 @@ re-emits it verbatim, moving only what it needs to (mapping keys).
 - Sorts mapping keys alphabetically, bottom-up — including inside list items
   and nested maps.
 - Never reorders list items (sequence order is meaningful).
+- A comment that is the *last* thing in a file (a footer) stays pinned at the
+  very bottom — it is not dragged into the middle when the neighbouring key
+  re-sorts.
 - For a list item that opens a map (`- api_key: none` then `base_url:`…), the
   anchor key fused to the `- ` is sorted with its siblings and the `- `
   re-fuses to whichever key sorts first, keeping every list entry fully

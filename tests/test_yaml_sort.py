@@ -58,6 +58,10 @@ CASES = [
     ("blank_lines", None),
     ("comment_in_list_item", None),
     ("inline_comment", None),
+    # trailing footer comments
+    ("trailing_comment_stays_bottom", None),
+    ("trailing_comment_nested", None),
+    ("trailing_comment_after_nested", None),
     # scalars and quoting
     ("folded_plain_scalar", None),
     ("quoted_scalar_with_colon", None),

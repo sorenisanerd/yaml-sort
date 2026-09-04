@@ -101,14 +101,25 @@ class Container:
 
     def _sort_map_keys(self) -> None:
         """Rebuild a mapping with keys alphabetised, keeping each gap with the
-        key it followed in the original text (trailing-gap semantics)."""
+        key it followed in the original text (trailing-gap semantics).
+
+        One exception: a run of gap lines that is the *last* block of the
+        container is the container's own terminal/footer comment, not the
+        preceding key's. It stays pinned at the very end, so a footer comment
+        at the bottom of a file is not dragged into the middle when the
+        neighbouring key re-sorts.
+        """
         leading_gap: list[str] = []
+        trailing_gap: list[str] = []
         pairs: list[tuple[KeyBlock, list[str]]] = []   # (key, trailing_gap)
         cur: tuple[KeyBlock, list[str]] | None = None
-        for b in self.blocks:
+        last = len(self.blocks) - 1
+        for i, b in enumerate(self.blocks):
             if isinstance(b, Gap):
                 if cur is None:
                     leading_gap.extend(b.lines)
+                elif i == last:
+                    trailing_gap.extend(b.lines)
                 else:
                     cur[1].extend(b.lines)
             else:
@@ -122,6 +133,8 @@ class Container:
             new_blocks.append(kb)
             if trailing:
                 new_blocks.append(Gap(trailing))
+        if trailing_gap:
+            new_blocks.append(Gap(trailing_gap))
         self.blocks = new_blocks
 
 
@@ -312,6 +325,12 @@ def parse_container(lines, idx: int, indent: int, kind: str):
         ind = _indent(line)
 
         if _is_gap(line):
+            if ind < indent:
+                # A gap (blank/comment) at a shallower indent belongs to the
+                # enclosing container, not this one — bubble up. Otherwise a
+                # footer comment at indent 0 would be swallowed by the previous
+                # leaf map instead of landing at the document root.
+                break
             pending_gap.append(line)
             i += 1
             continue
@@ -367,29 +386,34 @@ def parse_document(text: str):
     return root, lines
 
 
+def _eol(s: str) -> str:
+    """Ensure a line ends with a newline (idempotent)."""
+    return s if s.endswith("\n") else s + "\n"
+
+
 # ── emitter ──────────────────────────────────────────────────────────────────
 
 def _emit_keep(node: Container, out: list[str]) -> None:
     first = True
     for b in node.blocks:
         if isinstance(b, Gap):
-            out.extend(b.lines)
+            out.extend(_eol(line) for line in b.lines)
             continue
         if isinstance(b, Container):
             _emit_keep(b, out)
             continue
         if node.dash_first and first:
-            out.append(" " * node.seq_indent + "- " + b.header)
+            out.append(_eol(" " * node.seq_indent + "- " + b.header))
             for c in b.cont:
-                out.append(" " * node.seq_indent + c)
+                out.append(_eol(" " * node.seq_indent + c))
         elif isinstance(b, KeyBlock) and b.dash_anchor:
-            out.append(" " * b.anchor_indent + "- " + b.header)
+            out.append(_eol(" " * b.anchor_indent + "- " + b.header))
             for c in b.cont:
-                out.append(" " * b.anchor_indent + c)
+                out.append(_eol(" " * b.anchor_indent + c))
         else:
-            out.append(" " * node.indent + b.header)
+            out.append(_eol(" " * node.indent + b.header))
             for c in b.cont:
-                out.append(" " * node.indent + c)
+                out.append(_eol(" " * node.indent + c))
         first = False
         if isinstance(b.value, Container):
             _emit_keep(b.value, out)
@@ -404,7 +428,7 @@ def _emit_reindent(node: Container, indent: int, list_indent: int, out: list[str
     first = True
     for b in node.blocks:
         if isinstance(b, Gap):
-            out.extend(b.lines)
+            out.extend(_eol(line) for line in b.lines)
             continue
         if isinstance(b, Container):
             # A dash_first list-item map nested in a sequence: its dash sits at
@@ -420,9 +444,9 @@ def _emit_reindent(node: Container, indent: int, list_indent: int, out: list[str
         else:
             key_indent = indent + (2 if node.dash_first else 0)
             prefix = ""
-        out.append(" " * key_indent + prefix + b.header)
+        out.append(_eol(" " * key_indent + prefix + b.header))
         for c in b.cont:
-            out.append(" " * key_indent + c)
+            out.append(_eol(" " * key_indent + c))
         first = False
         if isinstance(b.value, Container):
             child = key_indent + (2 if b.value.kind == "map" else list_indent)
@@ -437,4 +461,9 @@ def sort_text(text: str, list_indent=None) -> str:
         _emit_keep(root, out)
     else:
         _emit_reindent(root, root.indent, list_indent, out)
-    return "".join(out)
+    result = "".join(out)
+    # If the source did not end with a newline, the emitters' guaranteed-eol
+    # lines would inject a trailing one; strip it so byte-exactness holds.
+    if not text.endswith("\n") and result.endswith("\n"):
+        result = result[:-1]
+    return result
