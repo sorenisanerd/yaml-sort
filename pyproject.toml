@@ -14,7 +14,7 @@ keywords = ["yaml", "sort", "deterministic", "chezmoi", "diff"]
 classifiers = [
     "Programming Language :: Python :: 3",
     "Operating System :: OS Independent",
-    "Topic :: Text Processing :: Markup :: YAML",
+    "Topic :: Text Processing :: Markup",
 ]
 dependencies = []
 
